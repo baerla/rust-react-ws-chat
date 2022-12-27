@@ -65,6 +65,7 @@ pub async fn get_user_by_id(
     })
         .await?
         .map_err(actix_web::error::ErrorInternalServerError)?;
+
     if let Some(user) = user {
         Ok(HttpResponse::Ok().json(user))
     } else {
@@ -72,7 +73,8 @@ pub async fn get_user_by_id(
             json!({
                 "error": 404,
                 "message": format!("No user found with phone: {id}")
-            }).to_string()
+            })
+                .to_string(),
         );
         Ok(res)
     }
@@ -88,15 +90,18 @@ pub async fn get_conversation_by_id(
         let mut conn = pool.get()?;
         db::get_conversation_by_room_id(&mut conn, room_id)
     })
-        .await?.map_err(actix_web::error::ErrorInternalServerError)?;
+        .await?
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
     if let Some(data) = conversations {
         Ok(HttpResponse::Ok().json(data))
     } else {
         let res = HttpResponse::NotFound().body(
             json!({
                 "error": 404,
-                "message": format!("No conversation with room_id: {room_id}").to_string(),
+                "message": format!("No conversation with room_id: {room_id}")
             })
+                .to_string(),
         );
         Ok(res)
     }
@@ -112,7 +117,9 @@ pub async fn get_user_by_phone(
         let mut conn = pool.get()?;
         db::find_user_by_phone(&mut conn, user_phone)
     })
-        .await?.map_err(actix_web::error::ErrorInternalServerError)?;
+        .await?
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
     if let Some(user) = user {
         Ok(HttpResponse::Ok().json(user))
     } else {
@@ -120,7 +127,8 @@ pub async fn get_user_by_phone(
             json!({
                 "error": 404,
                 "message": format!("No user found with phone: {}", phone.to_string()),
-            }).to_string(),
+            })
+                .to_string(),
         );
         Ok(res)
     }
@@ -136,6 +144,7 @@ pub async fn get_rooms(
     })
         .await?
         .map_err(actix_web::error::ErrorInternalServerError)?;
+
     if !rooms.is_empty() {
         Ok(HttpResponse::Ok().json(rooms))
     } else {
@@ -143,7 +152,8 @@ pub async fn get_rooms(
             json!({
                 "error": 404,
                 "message": "No rooms available at the moment.",
-            }).to_string(),
+            })
+                .to_string(),
         );
         Ok(res)
     }

@@ -6,7 +6,7 @@ diesel::table! {
         room_id -> Text,
         user_id -> Text,
         content -> Text,
-        created_at -> Binary,
+        created_at -> Text,
     }
 }
 

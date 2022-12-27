@@ -6,6 +6,7 @@ use std::{
 };
 use uuid::Uuid;
 use crate::models::{Conversation, NewConversation, Room, RoomResponse, User};
+
 type DbError = Box<dyn std::error::Error + Send + Sync>;
 
 fn iso_date() -> String {
@@ -26,12 +27,24 @@ pub fn find_user_by_phone(
     Ok(user)
 }
 
+pub fn find_user_by_uuid(
+    conn: &mut SqliteConnection,
+    uuid: Uuid,
+) -> Result<Option<User>, DbError> {
+    use crate::schema::users::dsl::*;
+    let user = users
+        .filter(id.eq(uuid))
+        .first::<User>(conn)
+        .optional()?;
+}
+
 pub fn insert_new_user(
     conn: &mut SqliteConnection,
     nm: &str,
     pn: &str,
-) -> Result<Option<User>, DbError> {
+) -> Result<User, DbError> {
     use crate::schema::users::dsl::*;
+
     let new_user = User {
         id: Uuid::new_v4().to_string(),
         username: nm.to_owned(),
@@ -39,13 +52,14 @@ pub fn insert_new_user(
         created_at: iso_date(),
     };
     diesel::insert_into(users).values(&new_user).execute(conn)?;
+
     Ok(new_user)
 }
 
 pub fn insert_new_conversation(
     conn: &mut SqliteConnection,
     new: NewConversation,
-) -> Result<Option<Conversation>, DbError> {
+) -> Result<Conversation, DbError> {
     use crate::schema::conversations::dsl::*;
     let new_conversation = Conversation {
         id: Uuid::new_v4().to_string(),
@@ -76,14 +90,14 @@ pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, D
         for id in user_ids.to_vec() {
             ids.insert(id.to_string());
         }
-        rooms_map.insert(room.id.to_string(), user_ids.to_vec());
+        room_map.insert(room.id.to_string(), user_ids.to_vec());
     }
-    let ids = ids.into_iter().collect::Vec<_>();
+    let ids = ids.into_iter().collect::<Vec<_>>();
     let users_data: Vec<User> = users::table
         .filter(users::id.eq_any(ids))
         .get_results(conn)?;
-    let user_map: HashMap<String, User> = HashMap::from_iter(
-        user_data.into_iter()
+    let users_map: HashMap<String, User> = HashMap::from_iter(
+        users_data.into_iter()
             .map(|item| (item.id.to_string(), item)),
     );
     let response_rooms = rooms_data.into_iter().map(|room| {
@@ -92,8 +106,20 @@ pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, D
             .unwrap()
             .into_iter()
             .map(|id| users_map.get(id.to_owned()).unwrap().clone())
-            .collect::Vec<_>();
-        return RoomResponse {room, users};
-    }).collect::Vec<_>();
+            .collect::<Vec<_>>();
+        return RoomResponse { room, users };
+    }).collect::<Vec<_>>();
     Ok(response_rooms)
+}
+
+pub fn get_conversation_by_room_id(
+    conn: &mut SqliteConnection,
+    uuid: Uuid,
+) -> Result<Option<Conversation>, DbError> {
+    use crate::schema::conversations::dsl::*;
+
+    let conversation = conversations
+        .filter(room_id.eq(uuid))
+        .first::<Conversation>()
+        .optional()?;
 }

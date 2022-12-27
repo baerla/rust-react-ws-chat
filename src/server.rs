@@ -52,12 +52,14 @@ impl ChatServer {
     pub fn new() -> ChatServer {
         let mut rooms = HashMap::new();
         rooms.insert("main".to_string(), HashSet::new());
+
         Self {
             sessions: HashMap::new(),
             rooms,
             rng: rand::thread_rng(),
         }
     }
+
     fn send_message(&self, room: &str, message: &str, skip_id: usize) {
         if let Some(sessions) = self.rooms.get(room) {
             for id in sessions {
@@ -77,7 +79,8 @@ impl Actor for ChatServer {
 
 impl Handler<Connect> for ChatServer {
     type Result = usize;
-    fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
+
+    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         let id = self.rng.gen::<usize>();
         self.sessions.insert(id, msg.addr);
         self.rooms
@@ -94,7 +97,8 @@ impl Handler<Connect> for ChatServer {
 
 impl Handler<Disconnect> for ChatServer {
     type Result = ();
-    fn handle(&mut self, msg: Disconnect, ctx: &mut Self::Context) -> Self::Result {
+
+    fn handle(&mut self, msg: Disconnect, _: &mut Self::Context) -> Self::Result {
         let mut rooms: Vec<String> = vec![];
         if self.sessions.remove(&msg.id).is_some() {
             for (name, sessions) in &mut self.rooms {
@@ -103,6 +107,7 @@ impl Handler<Disconnect> for ChatServer {
                 }
             }
         }
+
         for room in rooms {
             self.send_message("main", &json!({
                 "room": room,
@@ -113,9 +118,18 @@ impl Handler<Disconnect> for ChatServer {
     }
 }
 
+impl Handler<ClientMessage> for ChatServer {
+    type Result = ();
+        
+    fn handle(&mut self, msg: ClientMessage, _: &mut Self::Context) -> Self::Result {
+        self.send_message(&msg.room, &msg.msg, msg.id);
+    }
+}
+
 impl Handler<ListRooms> for ChatServer {
     type Result = MessageResult<ListRooms>;
-    fn handle(&mut self, msg: ListRooms, ctx: &mut Self::Context) -> Self::Result {
+
+    fn handle(&mut self, _: ListRooms, _: &mut Self::Context) -> Self::Result {
         let mut rooms = vec![];
         for key in self.rooms.keys() {
             rooms.push(key.to_owned());
@@ -126,14 +140,17 @@ impl Handler<ListRooms> for ChatServer {
 
 impl Handler<Join> for ChatServer {
     type Result = ();
-    fn handle(&mut self, msg: Join, ctx: &mut Self::Context) -> Self::Result {
+
+    fn handle(&mut self, msg: Join, _: &mut Self::Context) -> Self::Result {
         let Join { id, name } = msg;
         let mut rooms = vec![];
+
         for (n, sessions) in &mut self.rooms {
             if sessions.remove(&id) {
-                rooms.push(n.to_owned())
+                rooms.push(n.to_owned());
             }
         }
+
         for room in rooms {
             self.send_message(&room, &json!({
                 "room": room,
@@ -141,6 +158,7 @@ impl Handler<Join> for ChatServer {
                 "chat_type": session::ChatType::DISCONNECT
             }).to_string(), 0);
         }
+
         self.rooms
             .entry(name.clone())
             .or_insert_with(HashSet::new)

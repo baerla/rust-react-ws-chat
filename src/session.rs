@@ -10,7 +10,7 @@ use diesel::{
     r2d2::{self, ConnectionManager},
 };
 use crate::db;
-use crate::models::NewConversations;
+use crate::models::NewConversation;
 use crate::server;
 use crate::server::{ChatServer, Connect};
 
@@ -94,7 +94,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             ws::Message::Text(text) => {
                 let data_json = serde_json::from_str::<ChatServer>(&text.to_string());
                 if let Err(err) = data_json {
-                    println!({ err });
+                    println!("{}", err);
                     println!("Failed to parse message: {text}");
                     return;
                 }
@@ -125,7 +125,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             user_id: input.user_id.to_string(),
                         };
                         let mut conn = self.db_pool.get().unwrap();
-                        let new_conversation = NewConnection {
+                        let new_conversation = NewConversation {
                             user_id: input.user_id.to_string(),
                             room_id: input.room_id.to_string(),
                             message: input.value.join(""),
@@ -150,6 +150,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 ctx.stop();
             }
             ws::Message::Nop => (),
+            _ => {}
         }
     }
 }
