@@ -44,6 +44,7 @@ export default function ChatList({ onChatChange, userId }) {
     const [data, setData] = useState([])
     const [isLoading, setLoading] = useState(false)
     const [selectedItem, setSelectedItem] = useState(-1);
+
     useEffect(() => {
         setLoading(true)
         getRooms()
@@ -52,18 +53,20 @@ export default function ChatList({ onChatChange, userId }) {
                 setLoading(false)
             })
     }, []);
+
     const onSelectedChat = (idx, item) => {
         setSelectedItem(idx);
         let mapUsers = new Map();
         item.users.forEach(el => {
             mapUsers.set(el.id, el);
-        })
+        });
         const users = {
             get: id => mapUsers.get(id).username,
             get_target_user: id => item.users.filter(el => el.id != id).map(el => el.username).join("")
         }
         onChatChange({...item.room, users})
     };
+
     return (
         <div className="overflow-hidden space-y-3">
             {isLoading && <p>Loading chat lists.</p>}

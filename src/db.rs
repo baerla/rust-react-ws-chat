@@ -33,9 +33,10 @@ pub fn find_user_by_uuid(
 ) -> Result<Option<User>, DbError> {
     use crate::schema::users::dsl::*;
     let user = users
-        .filter(id.eq(uuid))
+        .filter(id.eq(uuid.to_string()))
         .first::<User>(conn)
         .optional()?;
+    Ok(user)
 }
 
 pub fn insert_new_user(
@@ -119,7 +120,8 @@ pub fn get_conversation_by_room_id(
     use crate::schema::conversations::dsl::*;
 
     let conversation = conversations
-        .filter(room_id.eq(uuid))
-        .first::<Conversation>()
+        .filter(room_id.eq(uuid.to_string()))
+        .first::<Conversation>(conn)
         .optional()?;
+    Ok(conversation)
 }

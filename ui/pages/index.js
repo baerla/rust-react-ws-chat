@@ -1,7 +1,4 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from '../styles/Home.module.css'
 import React, { useEffect, useState } from 'react'
 import Avatar from '../components/avatar'
 import ChatList from '../components/rooms'
@@ -10,7 +7,6 @@ import Login from '../components/login'
 import useConversations from '../libs/useConversation'
 import useLocalStorage from '../libs/useLocalStorage'
 import useWebsocket from '../libs/useWebsocket'
-const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
   const [room, setSelectedRoom] = useState(null);
@@ -26,12 +22,14 @@ export default function Home() {
       setIsTyping(false)
     }
   }
+
   const handleMessage = (msg, userId) => {
     setMessages(prev => {
       const item = { content: msg, user_id: userId };
       return [...prev, item];
     })
   }
+
   const onMessage = (data) => {
     try {
       let messageData = JSON.parse(data);
@@ -49,6 +47,7 @@ export default function Home() {
       console.log(e);
     }
   }
+
   const sendMessage = useWebsocket(onMessage)
   const updateFocus = () => {
     const data = {
@@ -60,6 +59,7 @@ export default function Home() {
     }
     sendMessage(JSON.stringify(data))
   }
+
   const onFocusChange = () => {
     const data = {
       id: 0,
@@ -70,16 +70,19 @@ export default function Home() {
     }
     sendMessage(JSON.stringify(data))
   }
+
   const submitMessage = (e) => {
     e.preventDefault();
     let message = e.target.message.value;
     if (message === "") {
       return;
     }
+
     if (!room.id) {
       alert("Please select chat room!")
       return
     }
+
     const data = {
       id: 0,
       chat_type: "TEXT",
@@ -98,10 +101,12 @@ export default function Home() {
     fetchConversations(data.id)
     setSelectedRoom(data)
   }
+
   const signOut = () => {
     window.localStorage.removeItem("user");
     setAuthUser(false);
   }
+
   useEffect(() => setShowLogIn(!auth), [auth])
 
   return (

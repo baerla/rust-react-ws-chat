@@ -115,8 +115,8 @@ export default function Login({show, setAuth}) {
         <div className={`${show ? '' : 'hidden'} bg-gradient-to-b from-orange-400 to-rose-400`}>
             <div className="flex items-center justify-center min-h-screen">
                 <div className="px-8 py-6 mt-4 text-left bg-white  max-w-[400px] w-full rounded-xl shadow-lg">
-                    <h3 className="text-xl text-slate-800 font-semibold">{isShowSigIn ? 'Log in with your phone.' : 'Create your account.'}</h3>
-                    {isShowSigIn ? <FormSignIn setAuth={setAuth}/> : <FormCreateUsername setAuth={setAuth}/>}
+                    <h3 className="text-xl text-slate-800 font-semibold">{isShowSignIn ? 'Log in with your phone.' : 'Create your account.'}</h3>
+                    {isShowSignIn ? <FormSignIn setAuth={setAuth}/> : <FormCreateUsername setAuth={setAuth}/>}
                 </div>
             </div>
         </div>

@@ -35,11 +35,12 @@ async fn main() -> std::io::Result<()> {
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)
             .max_age(3600);
+
         App::new()
             .app_data(web::Data::new(server.clone()))
             .app_data(web::Data::new(pool.clone()))
             .wrap(cors)
-            .service(web::resource("/".to(routes::index)))
+            .service(web::resource("/").to(routes::index))
             .route("/ws", web::get().to(routes::chat_server))
             .service(routes::create_user)
             .service(routes::get_user_by_id)
@@ -49,7 +50,8 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/", "./static"))
     })
         .workers(2)
-        .bind((server_addr, server_port))?.run();
+    .bind((server_addr, server_port))?
+    .run();
 
     println!("Server running at http://{server_addr}:{server_port}/");
     app.await

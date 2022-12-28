@@ -12,7 +12,7 @@ use diesel::{
 use crate::db;
 use crate::models::NewConversation;
 use crate::server;
-use crate::server::{ChatServer, Connect};
+use crate::server::{ChatServer, Connect, Message};
 
 const HEARTBEAT: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
@@ -61,10 +61,11 @@ impl Actor for WsChatSession {
                     Ok(res) => act.id = res,
                     _ => ctx.stop(),
                 }
+                fut::ready(())
             })
             .wait(ctx);
     }
-    fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
+    fn stopping(&mut self, _: &mut Self::Context) -> Running {
         self.addr.do_send(server::Disconnect { id: self.id });
         Running::Stop
     }
@@ -92,7 +93,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 ctx.pong(&msg);
             }
             ws::Message::Text(text) => {
-                let data_json = serde_json::from_str::<ChatServer>(&text.to_string());
+                let data_json = serde_json::from_str::<ChatMessage>(&text.to_string());
                 if let Err(err) = data_json {
                     println!("{}", err);
                     println!("Failed to parse message: {text}");

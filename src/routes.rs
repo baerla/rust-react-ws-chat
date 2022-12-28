@@ -25,7 +25,7 @@ pub async fn chat_server(
     pool: web::Data<DbPool>,
     srv: web::Data<Addr<server::ChatServer>>,
 ) -> Result<HttpResponse, Error> {
-    ws::start(
+    let res: Result<HttpResponse, Error> = ws::start(
         session::WsChatSession {
             id: 0,
             hb: Instant::now(),
@@ -36,7 +36,8 @@ pub async fn chat_server(
         },
         &req,
         stream,
-    )
+    );
+    res
 }
 
 #[post("/users/create")]
