@@ -3,7 +3,6 @@ use actix::prelude::*;
 use actix_web::web;
 use actix_web_actors::ws;
 use actix_web_actors::ws::ProtocolError;
-use rand::distributions::Open01;
 use serde::{Deserialize, Serialize};
 use diesel::{
     prelude::*,
@@ -25,7 +24,7 @@ pub struct WsChatSession {
     pub hb: Instant,
     pub room: String,
     pub name: Option<String>,
-    pub addr: Addr<server::ChatServer>,
+    pub addr: Addr<ChatServer>,
     pub db_pool: web::Data<DbPool>,
 }
 
@@ -52,7 +51,7 @@ impl Actor for WsChatSession {
         self.hb(ctx);
         let addr = ctx.address();
         self.addr
-            .send(server::Connect {
+            .send(Connect {
                 addr: addr.recipient(),
             })
             .into_actor(self)
@@ -71,14 +70,14 @@ impl Actor for WsChatSession {
     }
 }
 
-impl Handler<server::Message> for WsChatSession {
+impl Handler<Message> for WsChatSession {
     type Result = ();
-    fn handle(&mut self, msg: server::Message, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Message, ctx: &mut Self::Context) -> Self::Result {
         ctx.text(msg.0);
     }
 }
 
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
+impl StreamHandler<Result<ws::Message, ProtocolError>> for WsChatSession {
     fn handle(&mut self, item: Result<ws::Message, ProtocolError>, ctx: &mut Self::Context) {
         let msg = match item {
             Err(_) => {
@@ -91,6 +90,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             ws::Message::Ping(msg) => {
                 self.hb = Instant::now();
                 ctx.pong(&msg);
+            }
+            ws::Message::Pong(_) => {
+                self.hb = Instant::now();
             }
             ws::Message::Text(text) => {
                 let data_json = serde_json::from_str::<ChatMessage>(&text.to_string());
@@ -133,11 +135,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         };
                         let _ = db::insert_new_conversation(&mut conn, new_conversation);
                         let msg = serde_json::to_string(&chat_msg).unwrap();
-                        self.addr.do_send(server::ClientMessage {
+                        let request = self.addr.send(server::ClientMessage {
                             id: self.id,
                             msg,
                             room: self.room.clone(),
-                        })
+                        });
                     }
                     _ => {}
                 }
@@ -151,7 +153,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 ctx.stop();
             }
             ws::Message::Nop => (),
-            _ => {}
         }
     }
 }

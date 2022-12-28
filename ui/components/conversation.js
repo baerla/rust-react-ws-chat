@@ -28,13 +28,15 @@ function ConversationItem({ right, content, username }) {
 }
 export default function Conversation({ data, auth, users }) {
     const ref = useRef(null);
+
     useEffect(() => {
         ref.current?.scrollTo(0, ref.current.scrollHeight)
     }, [data]);
+
     return (
         <div className='p-4 space-y-4 overflow-auto' ref={ref}>
             {
-                data.map(item => {
+                data?.map(item => {
                     return <ConversationItem
                         right={item.user_id === auth.id}
                         content={item.content}

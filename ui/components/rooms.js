@@ -49,8 +49,10 @@ export default function ChatList({ onChatChange, userId }) {
         setLoading(true)
         getRooms()
             .then((data) => {
-                setData(data)
-                setLoading(false)
+                if (data) {
+                    setData(data)
+                    setLoading(false)
+                }
             })
     }, []);
 
